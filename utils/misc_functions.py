@@ -79,27 +79,62 @@ def smooth_data(data, smoothing_window=5):
     """
     return np.convolve(data, np.ones(smoothing_window) / smoothing_window, mode='valid')
 
+# utils/misc_functions.py
 
-def plot_cosine_similarity(cosine_similarity_data, output_dir='./images', unit_id=None):
+def normalize_unit_data(vectors_data):
     """
-    Saves a plot of cosine similarity over time as an image.
-    :param cosine_similarity_data: List of cosine similarity values
-    :param unit_id: ID of the unit for labeling
-    :param output_dir: Directory to save the images
+    Normalizes the cosine_similarities for each unit in the given vectors data.
+    :param vectors_data: List of unit data, where each unit has 'cosine_similarities'.
+    :return: The updated list with normalized cosine similarities.
     """
-    #os.makedirs(output_dir, exist_ok=True)
+    for unit_data in vectors_data:
+        similarities = unit_data['cosine_similarities']
+        min_val = min(similarities)
+        max_val = max(similarities)
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(cosine_similarity_data, label=f"Unit {unit_id}", marker='o')
-    plt.title(f"Cosine Similarity Over Time (Unit {unit_id})")
-    plt.xlabel("Window Index")
-    plt.ylabel("Cosine Similarity")
-    plt.ylim(0, 1.1)
-    plt.legend()
-    plt.grid()
+        # Avoid division by zero if all values are the same
+        if max_val == min_val:
+            unit_data['cosine_similarities'] = [0.5] * len(similarities)  # Assign 0.5 if all values are identical
+        else:
+            unit_data['cosine_similarities'] = [
+                (x - min_val) / (max_val - min_val) for x in similarities
+            ]
+    return vectors_data
 
-    image_path = os.path.join(output_dir, f"cosine_similarity_unit_{unit_id}.png")
-    plt.savefig(image_path)
-    plt.close()
+def plot_cosine_similarity_all_units(cosine_similarity_data, units_to_plot=None):
+    """
+    Plots cosine similarity relative to a baseline vector over time for all units on a single plot.
+    :param cosine_similarity_data: Dictionary with subset names as keys and cosine similarity data for each unit
+    :param units_to_plot: List of specific unit IDs to plot (optional). If None, plots all units.
+    """
+    plt.figure(figsize=(12, 8))
+    colors = plt.cm.tab20.colors  # Use a colormap for distinct unit colors
+    color_idx = 0
 
-    print(f"Cosine similarity plot saved to {image_path}")
+    for subset, subset_cosine_similarities in cosine_similarity_data.items():
+        normalized_data = normalize_unit_data(subset_cosine_similarities)
+        for unit_data in normalized_data:
+            unit_id = unit_data['unit']
+            cosine_similarities = unit_data['cosine_similarities']
+
+            # Filter specific units to plot if specified
+            if units_to_plot and unit_id not in units_to_plot:
+                continue
+
+            # Plot cosine similarity for the current unit
+            plt.plot(
+                cosine_similarities, 
+                label=f'Unit {unit_id} ({subset})', 
+                marker='o', 
+                color=colors[color_idx % len(colors)]
+            )
+            color_idx += 1
+
+    # Plot settings
+    plt.title("Cosine Similarity to Baseline Over Time (All Units)")
+    plt.xlabel("Time Step")
+    plt.ylabel("Cosine Similarity (Normalized)")
+    plt.legend(loc='upper right', fontsize='small', ncol=2)
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()

@@ -5,9 +5,12 @@ from models.ae import TimeSeriesAutoencoder
 from utils.misc_functions import (
     extract_latent_vectors,
     calculate_cosine_similarity_to_baseline,
-    plot_cosine_similarity
+    plot_cosine_similarity,
+    plot_cosine_similarity_all_units,
+    normalize_unit_data
+
 )
-from config import TEST_PICKLE_PATH, CHECKPOINT_DIR, WINDOW_SIZE, SELECTED_SENSORS, LATENT_DIM
+from config import TEST_PICKLE_PATH, CHECKPOINT_DIR, WINDOW_SIZE, SELECTED_SENSORS, LATENT_DI
 
 
 def load_last_checkpoint(model, checkpoint_dir):
@@ -49,3 +52,4 @@ if __name__ == "__main__":
 
     # Plot results
     plot_cosine_similarity(cosine_similarities, unit_id=unit_id)
+    plot_cosine_similarity_all_units(vectors)
